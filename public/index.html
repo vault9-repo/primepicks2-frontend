@@ -139,6 +139,8 @@
     .match-info { flex: 1; margin: 0 10px; text-align: center; }
     .countdown { font-weight: bold; color: #0d6efd; }
 
+    .countdown.urgent { color: #ff4c68; font-weight: bold; }
+
     .predictions-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -276,6 +278,8 @@ const upcomingContainer = document.getElementById('upcomingContainer');
 const predictionsContainer = document.getElementById('predictionsContainer');
 const spinner = document.getElementById('upcomingSpinner');
 const teamLogos = {};
+const countdownElements = [];
+
 function getTeamLogo(teamName){
   if(!teamLogos[teamName]){
     teamLogos[teamName] = `/logos/${teamName}.png`;
@@ -291,12 +295,13 @@ function getCountdown(date){
   const h = Math.floor(diff/(1000*60*60));
   const m = Math.floor((diff%(1000*60*60))/(1000*60));
   const s = Math.floor((diff%(1000*60))/1000);
-  return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  return {text:`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`, minutesLeft: h*60+m };
 }
 
 async function fetchMatches(){
   spinner.style.display = "inline-block";
   upcomingContainer.style.opacity = "0.5";
+  countdownElements.length = 0;
 
   try {
     const res = await fetch(`${API_BASE}/admin/fixtures`);
@@ -307,16 +312,18 @@ async function fetchMatches(){
     data.forEach(f=>{
       const div = document.createElement('div');
       div.classList.add('match-card');
+      const countdownObj = getCountdown(f.date+"T"+f.time);
       div.innerHTML = `
         <img src="${getTeamLogo(f.homeTeam)}" class="team-logo"/>
         <div class="match-info">
           <h6>${f.homeTeam} vs ${f.awayTeam}</h6>
           <p>${f.leagueId||''}</p>
-          <p>Countdown: <span class="countdown">${getCountdown(f.date+"T"+f.time)}</span></p>
+          <p>Countdown: <span class="countdown ${countdownObj.minutesLeft < 10 ? 'urgent':''}" data-time="${f.date}T${f.time}">${countdownObj.text}</span></p>
         </div>
         <img src="${getTeamLogo(f.awayTeam)}" class="team-logo"/>
       `;
       upcomingContainer.appendChild(div);
+      countdownElements.push(div.querySelector(".countdown"));
     });
   } catch(err) {
     console.error("Error loading upcoming matches:", err);
@@ -326,6 +333,17 @@ async function fetchMatches(){
     upcomingContainer.style.opacity = "1";
   }
 }
+
+// Live countdown update every second
+setInterval(()=>{
+  countdownElements.forEach(el=>{
+    const date = el.getAttribute("data-time");
+    const countdownObj = getCountdown(date);
+    el.textContent = countdownObj.text;
+    if(countdownObj.minutesLeft < 10) el.classList.add("urgent");
+    else el.classList.remove("urgent");
+  });
+}, 1000);
 
 async function fetchPredictions(){
   const res = await fetch(`${API_BASE}/admin/predictions`);
