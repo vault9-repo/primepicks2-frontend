@@ -111,18 +111,27 @@
     }
 
     .dashboard {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      margin-bottom: 2rem;
-    }
-    .upcoming-matches {
-      flex: 1;
-      min-width: 300px;
-      max-height: 600px;
-      overflow-y: auto;
-      position: relative;
-    }
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 2rem;
+}
+
+.upcoming-matches {
+  flex: 1;
+  min-width: 300px;
+  max-height: 600px;
+  overflow-y: auto;
+  position: relative;
+
+  /* Hide scrollbar but keep scroll */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+.upcoming-matches::-webkit-scrollbar {
+  width: 0px;                /* Chrome, Safari, Opera */
+  background: transparent;   /* optional */
+}
 
     .match-card {
       background: rgba(0, 0, 0, 0.75);
