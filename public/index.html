@@ -180,12 +180,12 @@
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
-    }
-    @keyframes signalPulse {
-      0% { box-shadow: 0 0 6px rgba(40,167,69,0.4), 0 0 10px rgba(40,167,69,0.5); }
-      50% { box-shadow: 0 0 26px rgba(40,167,69,1), 0 0 32px rgba(40,167,69,1); }
-      100% { box-shadow: 0 0 6px rgba(40,167,69,0.4), 0 0 10px rgba(40,167,69,0.5); }
-    }
+    }@keyframes signalPulse {
+  0% { box-shadow: 0 0 10px rgba(40,167,69,0.4), 0 0 20px rgba(40,167,69,0.5); }
+  50% { box-shadow: 0 0 35px rgba(40,167,69,0.9), 0 0 50px rgba(40,167,69,1); }
+  100% { box-shadow: 0 0 10px rgba(40,167,69,0.4), 0 0 20px rgba(40,167,69,0.5); }
+}
+
   </style>
 </head>
 
@@ -361,15 +361,28 @@ async function fetchPredictions(){
       <button class="view-stats-btn">VIEW STATS</button>
     `;
     const btn = div.querySelector(".view-stats-btn");
-    btn.style.cssText = `
-      position:absolute; bottom:8px; right:8px;
-      background:#28a745; color:white; border:none; padding:4px 8px;
-      border-radius:6px; font-size:12px; cursor:pointer;
-      box-shadow:0 0 10px rgba(40,167,69,0.7);
-      animation:signalPulse 2s infinite;
-    `;
-    btn.onmouseover=()=>btn.style.background="#218838";
-    btn.onmouseout=()=>btn.style.background="#28a745";
+   btn.style.cssText = `
+  position:absolute; bottom:8px; right:8px;
+  background: rgba(0,0,0,0.6);
+  color: #28a745;
+  border: 1px solid rgba(40,167,69,0.6);
+  padding: 6px 12px;
+  border-radius:8px;
+  font-size:12px;
+  cursor:pointer;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 15px rgba(40,167,69,0.7);
+  animation:signalPulse 2s infinite;
+  transition: all 0.3s ease;
+`;
+btn.onmouseover = () => {
+  btn.style.background = 'rgba(0,0,0,0.8)';
+  btn.style.boxShadow = '0 0 25px rgba(40,167,69,1)';
+};
+btn.onmouseout = () => {
+  btn.style.background = 'rgba(0,0,0,0.6)';
+  btn.style.boxShadow = '0 0 15px rgba(40,167,69,0.7)';
+};
 
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
