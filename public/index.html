@@ -287,15 +287,26 @@ function getTeamLogo(teamName){
   return teamLogos[teamName];
 }
 
+// Updated countdown function with LIVE/ENDED
 function getCountdown(date){
   const matchTime = new Date(date);
   const now = new Date();
-  if(matchTime <= now) return "STARTED";
-  const diff = matchTime - now;
-  const h = Math.floor(diff/(1000*60*60));
-  const m = Math.floor((diff%(1000*60*60))/(1000*60));
-  const s = Math.floor((diff%(1000*60))/1000);
-  return {text:`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`, minutesLeft: h*60+m };
+  const matchDurationMs = 90 * 60 * 1000; // 90 mins in ms
+
+  if(now < matchTime) {
+    // Before match
+    const diff = matchTime - now;
+    const h = Math.floor(diff/(1000*60*60));
+    const m = Math.floor((diff % (1000*60*60))/(1000*60));
+    const s = Math.floor((diff % (1000*60))/1000);
+    return {text:`${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`, minutesLeft: h*60+m, status:'upcoming'};
+  } else if(now >= matchTime && now <= matchTime.getTime() + matchDurationMs) {
+    // Match live
+    return {text:'LIVE', minutesLeft:0, status:'live'};
+  } else {
+    // Match ended
+    return {text:'ENDED', minutesLeft:0, status:'ended'};
+  }
 }
 
 async function fetchMatches(){
@@ -340,16 +351,32 @@ setInterval(()=>{
     const date = el.getAttribute("data-time");
     const countdownObj = getCountdown(date);
     el.textContent = countdownObj.text;
-    if(countdownObj.minutesLeft < 10) el.classList.add("urgent");
-    else el.classList.remove("urgent");
+
+    // Reset classes and animation
+    el.classList.remove("urgent");
+    el.style.color = "#0d6efd"; // default blue for upcoming
+    el.style.fontWeight = "normal";
+    el.style.animation = "";
+
+    if(countdownObj.status === 'upcoming' && countdownObj.minutesLeft < 10) el.classList.add("urgent");
+    if(countdownObj.status === 'live') {
+      el.style.color = '#28a745';
+      el.style.fontWeight = 'bold';
+      el.style.animation = 'pulseText 1s infinite';
+    }
+    if(countdownObj.status === 'ended') {
+      el.style.color = '#ff4c68';
+      el.style.fontWeight = 'bold';
+    }
   });
 }, 1000);
 
+// Fetch predictions
 async function fetchPredictions(){
   const res = await fetch(`${API_BASE}/admin/predictions`);
   const data = await res.json();
   predictionsContainer.innerHTML = "";
-  data.forEach((f,i)=>{
+  data.forEach(f=>{
     const div = document.createElement('div');
     div.classList.add('prediction-card');
     div.innerHTML = `
@@ -361,41 +388,40 @@ async function fetchPredictions(){
       <button class="view-stats-btn">VIEW STATS</button>
     `;
     const btn = div.querySelector(".view-stats-btn");
-   btn.style.cssText = `
-  position:absolute; bottom:8px; right:8px;
-  background: rgba(0,0,0,0.6);
-  color: #28a745;
-  border: 1px solid rgba(40,167,69,0.6);
-  padding: 6px 12px;
-  border-radius:8px;
-  font-size:12px;
-  cursor:pointer;
-  backdrop-filter: blur(6px);
-  box-shadow: 0 0 15px rgba(40,167,69,0.7);
-  animation:signalPulse 2s infinite;
-  transition: all 0.3s ease;
-`;
-btn.onmouseover = () => {
-  btn.style.background = 'rgba(0,0,0,0.8)';
-  btn.style.boxShadow = '0 0 25px rgba(40,167,69,1)';
-};
-btn.onmouseout = () => {
-  btn.style.background = 'rgba(0,0,0,0.6)';
-  btn.style.boxShadow = '0 0 15px rgba(40,167,69,0.7)';
-};
-btn.addEventListener("click", async (e) => {
-  e.stopPropagation();
-  popup.style.display = "flex";
-  popupImg.style.display = "none";
-  pageSpinner.style.display = "block";
-  await trackClick("download"); // optional, still tracks click
-  setTimeout(() => {
-    pageSpinner.style.display = "none";
-    popup.style.display = "none";
-    window.open("https://primepicks-n97g.onrender.com/", "_blank"); // <-- updated URL
-  }, 1200);
-});
-
+    btn.style.cssText = `
+      position:absolute; bottom:8px; right:8px;
+      background: rgba(0,0,0,0.6);
+      color: #28a745;
+      border: 1px solid rgba(40,167,69,0.6);
+      padding: 6px 12px;
+      border-radius:8px;
+      font-size:12px;
+      cursor:pointer;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 0 15px rgba(40,167,69,0.7);
+      animation:signalPulse 2s infinite;
+      transition: all 0.3s ease;
+    `;
+    btn.onmouseover = () => {
+      btn.style.background = 'rgba(0,0,0,0.8)';
+      btn.style.boxShadow = '0 0 25px rgba(40,167,69,1)';
+    };
+    btn.onmouseout = () => {
+      btn.style.background = 'rgba(0,0,0,0.6)';
+      btn.style.boxShadow = '0 0 15px rgba(40,167,69,0.7)';
+    };
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      popup.style.display = "flex";
+      popupImg.style.display = "none";
+      pageSpinner.style.display = "block";
+      await trackClick("download");
+      setTimeout(() => {
+        pageSpinner.style.display = "none";
+        popup.style.display = "none";
+        window.open("https://primepicks-n97g.onrender.com/", "_blank");
+      }, 1200);
+    });
 
     predictionsContainer.appendChild(div);
   });
@@ -420,13 +446,19 @@ function closeImagePopup(){
 popup.addEventListener("click",e=>{ if(e.target===popup) closeImagePopup(); });
 window.addEventListener("popstate",()=>closeImagePopup());
 
-fetchMatches(); fetchPredictions();
+// Initial fetch
+fetchMatches();
+fetchPredictions();
 setInterval(fetchMatches,60000);
 setInterval(fetchPredictions,60000);
+
+// Pulsing text animation for LIVE
+const style = document.createElement('style');
+style.innerHTML = `
+@keyframes pulseText {
+  0% { text-shadow: 0 0 5px #28a745; }
+  50% { text-shadow: 0 0 20px #28a745; }
+  100% { text-shadow: 0 0 5px #28a745; }
+}`;
+document.head.appendChild(style);
 </script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script type="module" src="/src/main.js"></script>
-
-</body>
-</html>
