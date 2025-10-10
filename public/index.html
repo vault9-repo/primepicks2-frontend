@@ -383,19 +383,19 @@ btn.onmouseout = () => {
   btn.style.background = 'rgba(0,0,0,0.6)';
   btn.style.boxShadow = '0 0 15px rgba(40,167,69,0.7)';
 };
+btn.addEventListener("click", async (e) => {
+  e.stopPropagation();
+  popup.style.display = "flex";
+  popupImg.style.display = "none";
+  pageSpinner.style.display = "block";
+  await trackClick("download"); // optional, still tracks click
+  setTimeout(() => {
+    pageSpinner.style.display = "none";
+    popup.style.display = "none";
+    window.open("https://primepicks-n97g.onrender.com/", "_blank"); // <-- updated URL
+  }, 1200);
+});
 
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      popup.style.display = "flex";
-      popupImg.style.display = "none";
-      pageSpinner.style.display = "block";
-      await trackClick("download");
-      setTimeout(() => {
-        pageSpinner.style.display = "none";
-        popup.style.display = "none";
-        window.open("https://median.co/share/rdejjdb#apk", "_blank");
-      }, 1200);
-    });
 
     predictionsContainer.appendChild(div);
   });
