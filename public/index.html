@@ -121,6 +121,7 @@
       min-width: 300px;
       max-height: 600px;
       overflow-y: auto;
+      position: relative;
     }
 
     .match-card {
@@ -232,7 +233,11 @@
   <div class="dashboard">
     <div class="upcoming-matches">
       <h4>Upcoming Matches</h4>
-      <div id="upcomingContainer"></div>
+      <div id="upcomingContainer" class="text-center py-4">
+        <div id="upcomingSpinner" class="spinner-border text-light" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -269,6 +274,7 @@ document.querySelector(".btn-success")?.addEventListener("click", ()=>trackClick
 
 const upcomingContainer = document.getElementById('upcomingContainer');
 const predictionsContainer = document.getElementById('predictionsContainer');
+const spinner = document.getElementById('upcomingSpinner');
 const teamLogos = {};
 function getTeamLogo(teamName){
   if(!teamLogos[teamName]){
@@ -289,24 +295,36 @@ function getCountdown(date){
 }
 
 async function fetchMatches(){
-  const res = await fetch(`${API_BASE}/admin/fixtures`);
-  const data = await res.json();
-  upcomingContainer.innerHTML = "";
-  data.sort((a,b)=> new Date(a.date+"T"+a.time)-new Date(b.date+"T"+b.time));
-  data.forEach(f=>{
-    const div = document.createElement('div');
-    div.classList.add('match-card');
-    div.innerHTML = `
-      <img src="${getTeamLogo(f.homeTeam)}" class="team-logo"/>
-      <div class="match-info">
-        <h6>${f.homeTeam} vs ${f.awayTeam}</h6>
-        <p>${f.leagueId||''}</p>
-        <p>Countdown: <span class="countdown">${getCountdown(f.date+"T"+f.time)}</span></p>
-      </div>
-      <img src="${getTeamLogo(f.awayTeam)}" class="team-logo"/>
-    `;
-    upcomingContainer.appendChild(div);
-  });
+  spinner.style.display = "inline-block";
+  upcomingContainer.style.opacity = "0.5";
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/fixtures`);
+    const data = await res.json();
+    upcomingContainer.innerHTML = "";
+
+    data.sort((a,b)=> new Date(a.date+"T"+a.time)-new Date(b.date+"T"+b.time));
+    data.forEach(f=>{
+      const div = document.createElement('div');
+      div.classList.add('match-card');
+      div.innerHTML = `
+        <img src="${getTeamLogo(f.homeTeam)}" class="team-logo"/>
+        <div class="match-info">
+          <h6>${f.homeTeam} vs ${f.awayTeam}</h6>
+          <p>${f.leagueId||''}</p>
+          <p>Countdown: <span class="countdown">${getCountdown(f.date+"T"+f.time)}</span></p>
+        </div>
+        <img src="${getTeamLogo(f.awayTeam)}" class="team-logo"/>
+      `;
+      upcomingContainer.appendChild(div);
+    });
+  } catch(err) {
+    console.error("Error loading upcoming matches:", err);
+    upcomingContainer.innerHTML = "<p class='text-danger'>Failed to load matches</p>";
+  } finally {
+    spinner.style.display = "none";
+    upcomingContainer.style.opacity = "1";
+  }
 }
 
 async function fetchPredictions(){
@@ -335,7 +353,6 @@ async function fetchPredictions(){
     btn.onmouseover=()=>btn.style.background="#218838";
     btn.onmouseout=()=>btn.style.background="#28a745";
 
-    // ✅ Updated VIEW STATS to behave like Download APK Now
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       popup.style.display = "flex";
