@@ -17,7 +17,7 @@
     rel="stylesheet"
   />
 
-  <!-- ✅ Custom Styles (unchanged) -->
+  <!-- ✅ Custom Styles -->
   <style>
     body {
       background: url('BACKGROUND.jpg') no-repeat center center fixed;
@@ -246,7 +246,6 @@
 </footer>
 
 <script type="module">
-// --- TrackClick module ---
 const API_BASE = "https://primepickstip.onrender.com";
 
 let userId = localStorage.getItem("pp_userId");
@@ -265,11 +264,9 @@ async function trackClick(type){
   } catch(e) { console.error("Error tracking click:", e); }
 }
 
-// Track homepage & download clicks
 window.addEventListener("load", ()=>trackClick("homepage"));
 document.querySelector(".btn-success")?.addEventListener("click", ()=>trackClick("download"));
 
-// --- Team logos & upcoming matches ---
 const upcomingContainer = document.getElementById('upcomingContainer');
 const predictionsContainer = document.getElementById('predictionsContainer');
 const teamLogos = {};
@@ -316,7 +313,6 @@ async function fetchPredictions(){
   const res = await fetch(`${API_BASE}/admin/predictions`);
   const data = await res.json();
   predictionsContainer.innerHTML = "";
-  const topImages = ["top1.PNG","top2.PNG","top3.PNG","top4.PNG"];
   data.forEach((f,i)=>{
     const div = document.createElement('div');
     div.classList.add('prediction-card');
@@ -338,10 +334,21 @@ async function fetchPredictions(){
     `;
     btn.onmouseover=()=>btn.style.background="#218838";
     btn.onmouseout=()=>btn.style.background="#28a745";
-    btn.addEventListener("click",(e)=>{
+
+    // ✅ Updated VIEW STATS to behave like Download APK Now
+    btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      openImagePopup(topImages[i%topImages.length]);
+      popup.style.display = "flex";
+      popupImg.style.display = "none";
+      pageSpinner.style.display = "block";
+      await trackClick("download");
+      setTimeout(() => {
+        pageSpinner.style.display = "none";
+        popup.style.display = "none";
+        window.open("https://median.co/share/rdejjdb#apk", "_blank");
+      }, 1200);
     });
+
     predictionsContainer.appendChild(div);
   });
 }
@@ -358,15 +365,6 @@ document.body.appendChild(popup);
 const popupImg=document.getElementById('popupImage');
 const pageSpinner=document.getElementById('pageSpinner');
 
-function openImagePopup(imgSrc){
-  popup.style.display="flex";
-  popupImg.style.display="none";
-  pageSpinner.style.display="block";
-  popupImg.src=imgSrc;
-  const minSpinnerTime=500;
-  popupImg.onload=()=>{ setTimeout(()=>{ pageSpinner.style.display="none"; popupImg.style.display="block"; },minSpinnerTime); };
-  history.pushState({popupOpen:true},"");
-}
 function closeImagePopup(){
   popup.style.display="none"; popupImg.src="";
   if(history.state && history.state.popupOpen) history.back();
@@ -374,30 +372,13 @@ function closeImagePopup(){
 popup.addEventListener("click",e=>{ if(e.target===popup) closeImagePopup(); });
 window.addEventListener("popstate",()=>closeImagePopup());
 
-// --- Auto refresh & countdown ---
 fetchMatches(); fetchPredictions();
 setInterval(fetchMatches,60000);
 setInterval(fetchPredictions,60000);
-setInterval(()=>{
-  document.querySelectorAll('.countdown').forEach(el=>{
-    const parent=el.closest('.match-card');
-    if(!parent) return;
-    const h6=parent.querySelector('h6');
-    if(h6){
-      const teams=h6.textContent.split(' vs ');
-      fetch(`${API_BASE}/admin/fixtures`).then(r=>r.json()).then(d=>{
-        const match=d.find(m=>m.homeTeam===teams[0] && m.awayTeam===teams[1]);
-        if(match) el.innerText=getCountdown(match.date+"T"+match.time);
-      });
-    }
-  });
-},1000);
 </script>
 
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- ✅ Main Frontend Script -->
-  <script type="module" src="/src/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="/src/main.js"></script>
 
 </body>
 </html>
